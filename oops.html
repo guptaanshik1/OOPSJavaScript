@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<body>
+    <script>
+        function StopWatch () {
+            let startTime, endTime, running, duration = 0
+
+            Object.defineProperty(this, 'duration', {
+                get: function () {
+                    return duration
+                },
+                set: function (value) {
+                    duration = value
+                }
+            })
+
+            Object.defineProperty(this, 'startTime', {
+                get: function () {
+                    return startTime
+                }
+            })
+
+            Object.defineProperty(this, 'endTime', {
+                get: function () {
+                    return endTime
+                }
+            })
+
+            Object.defineProperty(this, 'running', {
+                get: function () {
+                    return running
+                }
+            })
+        }
+
+        StopWatch.prototype.start = function () {
+            if (this.running) {
+                throw new Error("Stopwatch is already running.")
+            }
+            this.running = true
+            this.startTime = new Date()
+        }
+
+        StopWatch.prototype.stop = function () {
+            if (!this.running) {
+                throw new Error("Stopwatch is not running.")
+            }
+            this.running = false
+            this.endTime = new Date()
+
+            const seconds = (this.endTime.getTime() - this.startTime.getTime()) / 1000
+            this.duration += seconds
+        }
+
+        StopWatch.prototype.reset = function () {
+            this.startTime = null
+            this.endTime = null
+            this.running = false
+            this.duration = 0
+        }
+
+        function Shape (color) {
+            this.color = color
+        }
+
+        Shape.prototype.duplicate = function () {
+            console.log('Duplicate of shape called.')
+        }
+
+        // making a reusable inheritance function
+        function extend (Child, Parent) {
+            // parameters are supposed to be constructor functions
+            Child.prototype = Object.create(Parent.prototype)
+            Child.prototype.constructor = Child
+        }
+
+        function Circle (radius, color) {
+            Shape.call(this, color) // super
+            this.radius = radius
+        }
+
+        function Square (size) {
+            this.size = size
+        }
+
+        extend(Circle, Shape)
+        extend(Square, Shape)
+
+        Circle.prototype.draw = function () {
+            console.log('draw')
+        }
+
+        Circle.prototype.toString = function () { // overriding
+            return `Radius of circle is: ${this.radius}`
+        }
+
+        const shape = new Shape()
+        const circle = new Circle(4, 'red')
+        const square = new Square(4)
+
+        // // making shape prototype of circle
+        // Circle.prototype = Object.create(Shape.prototype)
+        
+        // // resetting the constructor of circle
+        // Circle.prototype.constructor = Circle
+
+        // method overriding and polymorphism
+        Circle.prototype.duplicate = function () {
+            Shape.prototype.duplicate.call(this) // calling method of parent
+            console.log('Duplicate of circle called.')
+        }
+
+        Square.prototype.duplicate = function () {
+            console.log('Duplicate of square called.')
+        }
+
+        // Mixins
+        const canEat = {
+            eat: function () {
+                console.log('Eating')
+            }
+        }
+
+        const canWalk = {
+            walk: function () {
+                console.log('Walking')
+            }
+        }
+
+        const canSwim = {
+            swim: function () {
+                console.log('Swimming')
+            }
+        }
+
+        function mixin (target, ...sources) {
+            Object.assign(target, ...sources)
+        }
+
+        function Person () {}
+        function Goldfish () {}
+
+        mixin(Person.prototype, canEat, canWalk)
+        mixin(Goldfish.prototype, canEat, canSwim)
+
+        const person = new Person()
+        // console.log(person)
+
+        const goldfish = new Goldfish()
+        // console.log(goldfish)
+
+        function HTMLElement () {
+            this.click = function () {
+                console.log('clicked')
+            }
+        }
+
+        HTMLElement.prototype.focus = function () {
+            console.log('focused')
+        }
+
+        function HTMLSelectElement (items = []) {
+            this.items = items
+
+            this.addItems = function (item) {
+                this.items.push(item)
+            }
+
+            this.removeItem = function (item) {
+                this.items.splice(this.items.indexOf(item), 1)
+            }
+
+            this.render = function () {
+                return `<select>${this.items.map(item => 
+                        `<option>${item}</option>`).join('')}<select/>`
+            }
+        }
+
+        function HTMLImageElement (src) {
+            this.src = src
+
+            this.render = function () {
+                return `<img src="${this.src}" />`
+            }
+        }
+
+        HTMLSelectElement.prototype = new HTMLElement()
+        HTMLSelectElement.prototype.constructor =  HTMLSelectElement
+
+        const el = new HTMLElement()
+        const select = new HTMLSelectElement()
+        const image = new HTMLImageElement()
+        
+        select.addItems('1')
+        select.addItems('2')
+        select.addItems('3')
+        select.addItems('4')
+        select.removeItem('3')
+
+        image.src = 'http://'
+        
+        class Rectangle {
+            constructor (length, width) {
+                this.length = length
+                this.width = width
+            }
+
+            draw () {
+                console.log('draw')
+            }
+
+            static parse (str) {
+                const length = JSON.parse(str).length
+                return new Rectangle(length)
+            }
+        }
+
+        const rectangle = Rectangle.parse('{ "length": 1 }')
+        console.log(rectangle)
+
+        const Polygon = function () {
+            this.draw = function () {
+                console.log(this)
+            }
+        }
+        
+        const polygon = new Polygon()
+        polygon.draw() // points to polygon object
+
+        const draw = polygon.draw
+        draw() // window object if strict mode is disabled otherwise undefined
+
+        // private
+        // const _radius = Symbol()
+        // const _move = Symbol()
+
+        // class Sphere {
+        //     constructor (radius) {
+        //         this[_radius] = radius
+        //     }
+
+        //     [_move] () {
+        //         console.log('moving')
+        //     }
+        // }
+
+        // const sphere = new Sphere(4)
+        // const key1 = Object.getOwnPropertySymbols(sphere)[0]
+        // console.log(sphere[key1]) // this will return radius
+
+        // WeakMaps
+        const _radius = new WeakMap()
+        const _move = new WeakMap()
+
+        class Circle2 {
+            constructor (radius) {
+                _radius.set(this, radius)
+                _move.set(this, () => {
+                    console.log('moving', this)
+                })
+            }
+
+            draw () {
+                _move.get(this)()
+                console.log(_radius.get(this))
+            }
+
+            // getter
+            get getRadius () {
+                return _radius.get(this)
+            }
+
+            // setter
+            set setRadius (value) {
+                if (value <= 0) {
+                    throw new Error("Invaid value")
+                }
+                _radius.set(this, value)
+            }
+        }
+
+        const c = new Circle2(4)
+        console.log(c)
+        c.draw()
+        console.log(c.getRadius)
+        c.setRadius = 8
+        console.log(c.getRadius)
+
+        // Inheritance and polymorphism
+        class Shape2 {
+            constructor (color) {
+                this.color = color
+            }
+
+            move () {
+                console.log("Shape2 moving")
+            }
+        }
+
+        class Circle3 extends Shape2 {
+            constructor(color, radius) {
+                super(color)
+                this.radius = radius
+            }
+
+            move () {
+                super.move() // to call parent's class move method
+                console.log('Circle3 moving')
+            }
+        }
+
+        const c3 = new Circle3("red", 10)
+        c3.move()
+
+        // Stack
+        const _items = new WeakMap()
+        class Stack {
+            constructor () {
+                _items.get(this, [])
+            }
+
+            push (value) {
+                _items.set(this).push(value)
+            }
+
+            pop () {
+                if (_items.get(this).length === 0) {
+                    throw new Error("Stack is empty")
+                }
+
+                return _items.get(this).pop()
+            }
+            
+            peek () {
+                if (_items.get(this).length === 0) {
+                    throw new Error("Stack is empty")
+                }
+
+                return _items.get(this)[_items.get(this).length - 1]
+            }
+
+            get count() {
+                return _items.get(this).length
+            }
+        }
+
+        const stack = new Stack()
+
+        stack.push('a')
+        stack.push('b')
+        stack.push('c')
+        stack.push('d')
+        stack.peek()
+        stack.count()
+        stack.pop()
+        stack.pop()
+        stack.peek()
+        stack.count()
+    </script>
+</body>
+</html>
